@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="sk" dir="ltr">
+  <head>
+    <meta charset="utf-8">
+    <title>Kopacs.io</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <meta name="author" content="Napakalaking Halimaw" />
+    <meta name="description" content="Fake scribbl.io called Kopacs.io" />
+    <meta name="keywords" content="Kopacs.io, Kopacs, paint, online, multiplayer, paint online, paint multiplayer, Kopacs.io paint" />
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.gstatic.com">
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans:400,400i,600,700,800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Raleway:wght@300&display=swap" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/p5@1.2.0/lib/p5.js"></script>
+    <script src="js/sketch.js"></script>
+  </head>
+  <body>
+    <div id="intermission" class="intermission">
+      <div class="center">
+        <h1><img src="images/logo.png" alt="logo" width="100%" height="100%"></h1>
+        <br>
+        <input id="username" type="text" name="username" placeholder="Tvoje meno"> <br>
+        <script type="text/javascript">
+          document.getElementById('username').addEventListener("keyup", function() {
+            if(event.keyCode === 13) {
+              event.preventDefault();
+              document.getElementById('connect').click();
+            }
+          });
+        </script>
+        <button id="connect" type="button" name="connect" class="btn-3d red" onclick="connect(this.parentElement.childNodes[5].value)">Pripojiť sa!</button>
+      </div>
+    </div>
+  </body>
+  <script type="text/javascript">
+    var socket = io({ autoConnect: false });
+
+    // setup client on his connection
+    socket.on('setup', (users) => {
+      console.log(users);
+      users.forEach((user) => {
+        user.self = user.userID === socket.id;
+        if(user.self) {
+          socket.auth.username = user.username;
+          socket.points = user.points;
+        }
+      });
+
+      document.getElementById('intermission').remove();
+
+      let drawingDiv = document.createElement("div");
+      drawingDiv.setAttribute('id', 'drawingDiv');
+      drawingDiv.classList.add("canvasDiv");
+
+      let optionsDiv = document.createElement("div");
+      optionsDiv.setAttribute('id', 'optionsDiv');
+      optionsDiv.classList.add("optionsDiv");
+
+      let usersDiv = document.createElement("div");
+      usersDiv.setAttribute('id', 'usersDiv');
+      usersDiv.classList.add("usersDiv");
+      users.forEach((user) => {
+        let userDiv = document.createElement("div");
+        userDiv.setAttribute('id', user.username);
+        userDiv.classList.add("user");
+        userDiv.style.backgroundColor = "white";
+        userDiv.style.color = "black";
+        userDiv.style.padding = "10px";
+        if(user.self)
+          userDiv.style.fontWeight = "bold";
+        userDiv.textContent = user.username;
+
+        let user_points = document.createElement("span");
+        user_points.style.float = "right";
+        user_points.innerHTML = user.points;
+        userDiv.appendChild(user_points);
+        usersDiv.appendChild(userDiv);
+      });
+
+      let clearBtn = document.createElement("button");
+      clearBtn.setAttribute('onclick', 'clearCanvas();');
+      clearBtn.setAttribute('disabled', 'true');
+      clearBtn.setAttribute('id', 'clearBtn');
+      clearBtn.style.width = "90%";
+      clearBtn.style.height = "50px";
+      clearBtn.innerHTML = "Clear";
+
+      let timerDiv = document.createElement("span");
+      timerDiv.setAttribute('id', 'timerDiv');
+      timerDiv.innerHTML = "Welcome to Kopacs.io!";
+
+      let textBox = document.createElement("textarea");
+      textBox.style.resize = "none";
+      textBox.style.width = "90%";
+      textBox.style.height = "75%";
+      textBox.style.backgroundColor = "white";
+      textBox.style.whiteSpace = "pre-wrap";
+      textBox.style.fontWeight = "bold";
+      textBox.setAttribute('disabled', 'true');
+      textBox.setAttribute('id', 'chat');
+
+      let inputBox = document.createElement("input");
+      inputBox.style.width = "90%";
+      inputBox.style.backgroundColor = "white";
+      inputBox.setAttribute('id', 'user_guess');
+      inputBox.setAttribute('required', 'true');
+      inputBox.addEventListener("keyup", function() {
+        if(event.keyCode === 13) {
+          event.preventDefault();
+          document.getElementById('button').click();
+        }
+      });
+
+      let submitBtn = document.createElement("input");
+      submitBtn.setAttribute('type', 'button');
+      submitBtn.setAttribute('value', 'enter');
+      submitBtn.setAttribute('id', 'button');
+      submitBtn.style.cursor = "pointer";
+      submitBtn.style.width = "90%";
+      submitBtn.style.height = "40px";
+      submitBtn.style.padding = "5px";
+      submitBtn.style.marginTop = "5px";
+      submitBtn.setAttribute('value', 'Guess!');
+      submitBtn.addEventListener("click", sendGuess, false);
+
+      optionsDiv.appendChild(timerDiv);
+      optionsDiv.appendChild(document.createElement("br"));
+      optionsDiv.appendChild(document.createElement("br"));
+      optionsDiv.appendChild(clearBtn);
+      optionsDiv.appendChild(document.createElement("br"));
+      optionsDiv.appendChild(document.createElement("br"));
+      optionsDiv.appendChild(textBox);
+      optionsDiv.appendChild(document.createElement("br"));
+      optionsDiv.appendChild(inputBox);
+      optionsDiv.appendChild(document.createElement("br"));
+      optionsDiv.appendChild(submitBtn);
+
+      let wordDiv = document.createElement("div");
+      wordDiv.setAttribute('id', 'wordDiv');
+      wordDiv.classList.add("wordDiv");
+      let word = document.createElement("h1");
+      word.setAttribute('id', 'word');
+      word.innerHTML = "";
+      wordDiv.appendChild(word);
+      document.body.appendChild(wordDiv);
+
+      let content = document.createElement("div");
+      content.setAttribute('id', 'content');
+      content.classList.add("content");
+      content.classList.add("row");
+      content.appendChild(usersDiv);
+      content.appendChild(drawingDiv);
+      content.appendChild(optionsDiv);
+      document.body.appendChild(content);
+
+      let width = drawingDiv.offsetWidth;
+      let height = drawingDiv.offsetHeight;
+
+      function setup() {
+        var canvas = createCanvas(width, height*0.9);
+        background(255);
+        canvas.mousePressed(drawClick);
+        //frameRate(60);
+        canvas.parent(drawingDiv);
+      }
+      setup();
+    });
+
+    // user connect - disconnect events
+    socket.on('user connected', (user) => {
+      document.getElementById('chat').append(user.username + " has connected!\r\n");
+      let newUser = document.createElement("div");
+      newUser.setAttribute('id', user.username);
+      newUser.classList.add("user");
+      newUser.style.backgroundColor = "white";
+      newUser.style.color = "black";
+      newUser.style.padding = "10px";
+      newUser.textContent = user.username;
+
+      let user_points = document.createElement("span");
+      user_points.style.float = "right";
+      user_points.innerHTML = user.points;
+      newUser.appendChild(user_points);
+      document.getElementById('usersDiv').appendChild(newUser);
+    });
+
+    socket.on('user disconnected', (user) => {
+      document.getElementById('chat').append(user + " has disconnected!\r\n");
+      document.getElementById(user).remove();
+    });
+
+    // drawing events
+    socket.on('mouse', (data) => {
+      let c = data.color;
+      switch (data.type) {
+        case 'draw':
+          fill(c);
+          noStroke();
+          circle(data.x, data.y, data.diameter);
+          break;
+
+        case 'erase':
+          fill('white');
+          noStroke();
+          circle(data.x, data.y, data.diameter);
+          break;
+
+        case 'fill':
+          background(c);
+          break;
+
+        default:
+          fill('black');
+          noStroke();
+          circle(data.x, data.y, 15);
+      }
+    });
+
+    socket.on('clear', (data) => {
+      clear();
+      background(255);
+    });
+
+    socket.on('change', (data) => {
+      switch (data.type) {
+        case 'color':
+          selectedColor = data.color;
+          break;
+
+        case 'util':
+          selectedUtil = data.util;
+          break;
+
+        case 'brush_size':
+          selectedBrushSize = data.brushSize;
+          break;
+      }
+    });
+
+    // game properties events
+    socket.on('round_start', (data) => {
+      clear();
+      background(255);
+
+      if(data.round === 1)
+        document.getElementById('chat').append("GAME STARTING!!!\r\n");
+
+      document.getElementById('chat').append("Round: " + data.round + "\r\n");
+      document.getElementById('clearBtn').setAttribute('disabled', 'true');
+      document.getElementById('user_guess').removeAttribute('disabled');
+      document.getElementById('button').removeAttribute('disabled');
+      document.getElementById('button').style.cursor = "pointer";
+
+      document.getElementById('chat').append(data.draftsman + " is choosing a word!\r\n");
+      document.getElementById(data.draftsman).style.backgroundColor = "dodgerblue";
+      if(socket.auth.username === data.draftsman) {
+        let overlay = document.createElement("div");
+        overlay.setAttribute('id', 'overlay');
+        overlay.style.textAlign = "center";
+        overlay.style.position = "fixed";
+        overlay.style.width = "100%";
+        overlay.style.height = "100%";
+        overlay.style.top = "0";
+        overlay.style.bottom = "0";
+        overlay.style.left = "0";
+        overlay.style.right = "0";
+        overlay.style.backgroundColor = "rgba(0,0,0,0.5)";
+        overlay.style.zIndex = 999;
+
+        for (var i = 0; i < data.words.length; i++) {
+          let wordBtn = document.createElement("button");
+          wordBtn.setAttribute('onclick', 'selectWord("' + data.words[i] + '")');
+          wordBtn.classList.add("btn-3d");
+          wordBtn.classList.add("red");
+          wordBtn.innerHTML = data.words[i];
+          overlay.appendChild(wordBtn);
+        }
+
+        document.getElementById('user_guess').setAttribute('disabled', 'true');
+        document.getElementById('button').setAttribute('disabled', 'true');
+        document.getElementById('button').style.cursor = "not-allowed";
+
+        document.getElementById('clearBtn').removeAttribute('disabled');
+        document.getElementById('drawingDiv').style.cursor = "crosshair";
+        document.body.appendChild(overlay);
+        document.getElementById('drawingDiv').appendChild(createTools());
+
+        /*let stateCheck = setInterval(function() {
+          if(document.getElementById('content') === null) {
+            console.log("not ready!");
+            return;
+          }
+
+          clearInterval(stateCheck);
+          console.log("ready!");
+
+
+        }, 100);*/
+      } else {
+        document.getElementById('drawingDiv').style.cursor = "not-allowed";
+      }
+    });
+
+    socket.on('round_end', (data) => {
+      document.getElementById('chat').append("Round ended!\r\n");
+      if(data === 'time_expired') {
+        document.getElementById('chat').append("Time expired!\r\n");
+      } else if (data === "draftsman_time_expired") {
+        document.getElementById('chat').append("Draftsman did not pick a word to draw in the time limit!\r\n");
+        if(document.getElementById('overlay') !== null)
+          document.getElementById('overlay').remove();
+      } else {
+        document.getElementById(data.username).childNodes[1].innerHTML = data.points;
+      }
+
+      let players = document.getElementsByClassName('user');
+      for (var i = 0; i < players.length; i++)
+        players[i].style.backgroundColor = "white";
+
+      socket.canDraw = false;
+      document.getElementById('clearBtn').setAttribute('disabled', 'true');
+      document.getElementById('drawingDiv').style.cursor = "not-allowed";
+      if(document.getElementById('tools') !== null)
+        document.getElementById('tools').remove();
+      document.getElementById('word').innerHTML = "";
+    });
+
+    socket.on('game_cancel', (info) => {
+      document.getElementById('chat').append("Game canceled! " + info + "!\r\n");
+      document.getElementById('drawingDiv').style.cursor = "not-allowed";
+    });
+
+    socket.on('game_waiting', (data) => {
+      document.getElementById('chat').append("Waiting for more players! (" + data.players + " / " + data.playersNeeded + ")\r\n");
+      document.getElementById('drawingDiv').style.cursor = "not-allowed";
+    });
+
+    socket.on('game_end', (users) => {
+      document.getElementById('chat').append("Game ended!\r\n");
+      let sortedUsers = Object.values(users).sort(function(a, b) { return b.points - a.points });
+      for (var i = 0; i < sortedUsers.length; i++) {
+        document.getElementById('chat').append((i+1) + ". place " + sortedUsers[i].username + " with:" + sortedUsers[i].points + " points\r\n");
+      }
+    });
+
+    socket.on('tick', (data) => {
+      document.getElementById('timerDiv').innerHTML = data.type + " 's time left: <b>" + data.time + "</b>";
+    });
+
+    // guess & word events
+    socket.on('guess', (data) => {
+      if(data.correct) {
+        document.getElementById('chat').append(data.username + " guessed the right word!\r\n");
+
+        // change from guessing to chatting or smth instead of this
+        if(socket.auth.username === data.username) {
+          document.getElementById('user_guess').setAttribute('disabled', 'true');
+          document.getElementById('button').setAttribute('disabled', 'true');
+          document.getElementById('button').style.cursor = "not-allowed";
+        }
+
+        document.getElementById(data.username).style.backgroundColor = "lime";
+        document.getElementById(data.username).childNodes[1].innerHTML = data.points;
+      }
+      else
+        document.getElementById('chat').append(data.username + ": " + data.guess + "\r\n");
+    });
+
+    socket.on('word', (data) => {
+      if(socket.auth.username !== data.username) {
+        for (var i = 0; i < data.wordLength; i++) {
+          document.getElementById('word').innerHTML += ("_ ");
+        }
+      }
+      document.getElementById('chat').append(data.username + " has selected a word to guess!\r\n\r\nLet's start guessing!\r\n");
+      if(socket.auth.username === data.username)
+        socket.canDraw = true;
+    });
+  </script>
+</html>

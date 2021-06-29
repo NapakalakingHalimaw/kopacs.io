@@ -1,0 +1,147 @@
+@charset "UTF-8";
+/*
+ * paintMultiplayer.css
+ * Author: Timotej Kopac
+ * Copyright Timotej Kopáč, All rights reserved
+ */
+
+/* ----- MAIN LOGIC ----- */
+body, html {
+  height: 100%;
+  min-height: 100vh;
+  background: url("images/bg.png");
+}
+
+* {
+  font-family: 'Raleway', sans-serif;
+  margin: 0;
+  padding: 0;
+}
+
+::selection {
+  background: rgba(200, 80, 95, 0.75);
+}
+
+/* ----- INDEX ----- */
+.intermission {
+  margin: 0;
+  position: absolute;
+  background-color: white;
+  padding: 25px;
+  width: 500px;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  height: 200px;
+}
+
+.content {
+  padding-top: 1em;
+  width: 100%;
+  color: #d2d2d2;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.wordDiv {
+  padding: 5px;
+  background-color: white;
+  text-align: center;
+  margin: 0 auto;
+  max-width: 1200px;
+  min-height: 45px;
+}
+
+.row {
+  display: flex;
+}
+
+.canvasDiv {
+  width: 70%;
+  height: 90vh;
+  cursor: crosshair;
+}
+
+.toolsDiv {
+  cursor: pointer;
+}
+
+.optionsDiv {
+  width: 30%;
+  padding-left: 5px;
+  border-radius: 6px;
+}
+
+.usersDiv {
+  width: 25%;
+  padding-right: 5px;
+  border-radius: 6px;
+}
+
+.btn-3d {
+  cursor: pointer;
+	position: relative;
+	display: inline-block;
+	font-size: 16px;
+	padding: 15px 40px;
+	color: white;
+	border-radius: 6px;
+	text-align: center;
+	transition: top .01s linear;
+	text-shadow: 0 1px 0 rgba(0,0,0,0.15);
+}
+
+.btn-3d.red:hover {
+  background-color: lightgrey;
+}
+
+.btn-3d:active {
+	top: 9px;
+}
+
+.btn-3d.red {
+	background-color: grey;
+	box-shadow: 0 0 0 1px grey inset,
+        0 0 0 2px rgba(255,255,255,0.15) inset,
+        0 8px 0 0 grey,
+        0 8px 0 1px rgba(0,0,0,0.4),
+				0 8px 8px 1px rgba(0,0,0,0.5);
+}
+.btn-3d.red:active {
+	box-shadow: 0 0 0 1px grey inset,
+				0 0 0 2px rgba(255,255,255,0.15) inset,
+				0 0 0 1px rgba(0,0,0,0.4);
+}
+
+/* ----- Responsivness ----- */
+@media only screen and (max-width: 1199px) {
+  .content {
+    flex-direction: column;
+    align-content: center;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .usersDiv {
+    width: 80%;
+  }
+
+  .canvasDiv {
+    width: 100%;
+  }
+
+  .optionsDiv {
+    width: 90%;
+  }
+
+  .optionsDiv textarea {
+    height: 30vh !important;
+  }
+}
